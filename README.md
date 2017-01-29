@@ -22,7 +22,7 @@
 - git clone this repo
 - open ./*.sln in MonoDevelop or Visual Studio
 - build a Release
-- copy all *.dlls (should be 4) from ./bin/Release into your Unity /Assets folder
+- copy all *.dlls (should be 5) from ./bin/Release into your Unity /Assets folder
 - add "using Balance".. to your scripts (checkout Example Project for usage)
 - checkout "balance-engine" to build a backend for your client
 
@@ -34,3 +34,4 @@
 - lidgren network gen3 under MIT license (c) 2015 lidgren
 - newtonsoft.json under MIT license (c) 2007 James Newton-King
 - betterhttpclient (adapted) no license provided (c) 2016 Yozer
+- websocket-sharp under MIT license (c) 2010-2017 sta.blockhead
