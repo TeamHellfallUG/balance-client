@@ -324,3 +324,4 @@ bin
 obj
 *.mdb
 UpgradeLog*.*
+.DS_Store
