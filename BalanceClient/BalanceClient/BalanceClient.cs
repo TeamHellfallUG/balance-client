@@ -11,7 +11,7 @@ namespace Balance
 {
 	public class BalanceClient
 	{
-		public const String VERSION = "0.0.2";
+		public const String VERSION = "1.1.0";
 		public const String INTERNAL = "internal";
 		public const String PING_HEADER = "GS:PING";
 		public const Int32 PING_INTERVAL = 15500;
@@ -119,7 +119,7 @@ namespace Balance
 
 		protected void ping()
 		{
-			log("sending ping.");
+			//log("sending ping.");
 			this.pingStopwatch = Stopwatch.StartNew();
 			Send(new Packet(INTERNAL, "GS:PING", "ping"));
 		}
@@ -133,7 +133,7 @@ namespace Balance
 			pingStopwatch.Stop();
 			lastPingRoundtrip = pingStopwatch.Elapsed.TotalMilliseconds;
 			pingStopwatch = null;
-			log("received pong. Roundtrip took: " + lastPingRoundtrip.ToString() + " ms.");
+			log("Current Ping is " + lastPingRoundtrip.ToString() + " ms.");
 		}
 
 		private void attachListeners() {

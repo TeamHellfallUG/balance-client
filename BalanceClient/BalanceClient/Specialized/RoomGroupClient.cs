@@ -28,6 +28,7 @@ namespace Balance.Specialized
 
 		private bool inQueue = false;
 		private bool inMatch = false;
+        private bool confirmationOpen = false;
 		private String currentMatchId = null;
 		private String confirmMatchId = null;
 
@@ -38,6 +39,7 @@ namespace Balance.Specialized
 		{
 			log("RoomGroupClient active.");
 			this.lastMatches = new List<string> ();
+            init();
 		}
 
 		public bool IsInQueue(){
@@ -47,6 +49,11 @@ namespace Balance.Specialized
 		public bool IsInMatch(){
 			return this.inMatch;
 		}
+
+        public bool IsConfirmationOpen()
+        {
+            return this.confirmationOpen;
+        }
 
 		public String GetCurrentMatchId(){
 			return this.currentMatchId;
@@ -68,27 +75,42 @@ namespace Balance.Specialized
 
 		private void handleConfirmRequest(Packet packet){
 			this.inQueue = false;
-			this.confirmMatchId = packet.Content.GetValue ("matchId").ToString();
-			log ("found match, received confirmation request.");
+
+            try
+            {
+                log(packet.ToString());
+                log(packet.Content.ToString());
+                this.confirmMatchId = packet.Content.GetValue("matchId").ToString();
+            }
+            catch (Exception ex)
+            {
+                log("failed to parse matchId from confirmation message");
+                log(ex.Message + " .. " + ex.StackTrace);
+                return;
+            }
+
+            this.confirmationOpen = true;
+            log ("found match, received confirmation request.");
 		}
 
 		private void handleStart(Packet packet){
 			this.inMatch = true;
-			this.currentMatchId = this.confirmMatchId;
+            this.currentMatchId = this.confirmMatchId;
 			this.confirmMatchId = null;
 			log ("match is ready to start.");
 		}
 
 		private void handleDisband(Packet packet){
 			this.inMatch = false;
-			this.currentMatchId = null;
+            this.confirmationOpen = false;
+            this.currentMatchId = null;
 			this.confirmMatchId = null;
 			log ("match group has been disbanded.");
 		}
 
 		private void handleEnd(Packet packet){
 			this.inMatch = false;
-			this.lastMatches.Add (this.currentMatchId);
+            this.lastMatches.Add (this.currentMatchId);
 			this.currentMatchId = null;
 			this.confirmMatchId = null;
 			log ("match has ended.");
@@ -144,7 +166,7 @@ namespace Balance.Specialized
 					break;
 
 					case RGSHeader.CONFIRM:
-					this.handleConfirmRequest(packet);
+					    this.handleConfirmRequest(packet);
 						if(OnConfirmRequest != null){
 							OnConfirmRequest(packet);
 						}
@@ -229,11 +251,13 @@ namespace Balance.Specialized
 
 		public void ConfirmMatchRequest(){
 
-			if(this.confirmMatchId == null){
+			if(this.confirmMatchId == null && this.confirmationOpen){
 				throw new Exception ("cannot confirm match without a present confirmation request.");
 			}
 
-			JObject content = new JObject ();
+            this.confirmationOpen = false;
+
+            JObject content = new JObject ();
 			content.Add ("matchId", this.confirmMatchId);
 			Send(new Packet(INTERNAL, RGSHeader.CONFIRM, content));
 		}
