@@ -28,7 +28,8 @@
 
 # other info
 - some parts are still wip
-- this is the client library, the server is available under "krystianity/balance-engine"
+- this is the client library, the server is available under: ["krystianity/balance-engine"](https://github.com/krystianity/balance-engine)
+- a Unity3D Demo Project can be found here: ["krystianity/balance-unity"](https://github.com/krystianity/balance-unity)
 
 # used libraries
 - lidgren network gen3 under MIT license (c) 2015 lidgren
