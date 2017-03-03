@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 using Newtonsoft.Json.Linq;
 using System.Collections.Generic;
@@ -78,8 +78,6 @@ namespace Balance.Specialized
 
             try
             {
-                log(packet.ToString());
-                log(packet.Content.ToString());
                 this.confirmMatchId = packet.Content.GetValue("matchId").ToString();
             }
             catch (Exception ex)
@@ -131,8 +129,25 @@ namespace Balance.Specialized
 				return;
 			}
 
-			JToken token = packet.Content.GetValue("states");
-			List<RStateUpdate> states = token.ToObject<List<RStateUpdate>>();
+            JToken token = null;
+            try
+            {
+                token = packet.Content.GetValue("states");
+            } catch(Exception ex)
+            {
+                log("failed to retrieve states from su-message: " + ex.Message + ",  " + ex.StackTrace);
+                return;
+            }
+
+            List<RStateUpdate> states = null;
+            try
+            {
+                states = token.ToObject<List<RStateUpdate>>();
+            } catch(Exception ex)
+            {
+                log("failed to parse/cast states from su-message: " + ex.Message + ",  " + ex.StackTrace);
+                return;
+            }
 
 			if (OnStatesUpdate != null) {
 				OnStatesUpdate(states);
