@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Threading;
 using System.Diagnostics;
 
@@ -150,7 +150,7 @@ namespace Balance
 
 			client.OnError += (Exception exception) =>
 			{
-				log("error: " + exception.Message);
+				log("error: " + exception.Message + ", " + exception.StackTrace);
 			};
 
 			client.OnMessage += (String data) =>
