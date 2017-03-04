@@ -11,11 +11,13 @@ namespace Balance
 {
 	public class BalanceClient
 	{
-		public const String VERSION = "1.1.0";
+		public const String VERSION = "1.3.0";
 		public const String INTERNAL = "internal";
 		public const String PING_HEADER = "GS:PING";
+        public const String IDENTIFICATION = "J:IDENTIFICATION";
 		public const Int32 PING_INTERVAL = 15500;
 
+        public delegate void VoidEventDelegate();
 		public delegate void LogDelegate(String message);
 		public delegate void PacketArgsDelegate(Packet packet);
 
@@ -29,6 +31,10 @@ namespace Balance
 
 		public event PacketArgsDelegate OnPacket;
 		public event PacketArgsDelegate OnInternalPacket;
+        public event VoidEventDelegate OnReady;
+
+        private String identification;
+        private Boolean ready;
 
 		public BalanceClient(Config config, IClient client)
 		{
@@ -44,6 +50,7 @@ namespace Balance
 
 			this.config = config;
 			this.client = client;
+            this.ready = false;
 		}
 
 		public BalanceClient(Config config, IClient client, LogDelegate log)
@@ -65,11 +72,28 @@ namespace Balance
 			this.log("[BalanceClient]: " + VERSION);
 		}
 
+        public String GetIdentification()
+        {
+            return this.identification;
+        }
+
+        public Boolean IsReady()
+        {
+            return this.ready;
+        }
+
 		protected void log(String message) {
 			if (this._log != null) {
 				this._log("[BalanceClient]: " + message);
 			}
 		}
+
+        protected void debug(String message) {
+            if (this.config.debugLog)
+            {
+                this.log(message);
+            }
+        }
 
 		protected void spawnIntervalThread()
 		{
@@ -117,14 +141,14 @@ namespace Balance
 			this.client.Connect(this.config);
 		}
 
-		protected void ping()
+		private void ping()
 		{
-			//log("sending ping.");
+            debug("sending ping.");
 			this.pingStopwatch = Stopwatch.StartNew();
 			Send(new Packet(INTERNAL, "GS:PING", "ping"));
 		}
 
-		protected void receivePong() {
+		private void receivePong() {
 			
 			if (pingStopwatch == null) {
 				return;
@@ -133,13 +157,37 @@ namespace Balance
 			pingStopwatch.Stop();
 			lastPingRoundtrip = pingStopwatch.Elapsed.TotalMilliseconds;
 			pingStopwatch = null;
-			log("Current Ping is " + lastPingRoundtrip.ToString() + " ms.");
+            debug("Current Ping is " + lastPingRoundtrip.ToString() + " ms.");
 		}
+
+        private void receiveIdentification(Packet packet)
+        {
+            if (this.ready)
+            {
+                throw new Exception("received identification although ready event has already been called.");
+            }
+
+            this.ready = true;
+            try
+            {
+                this.identification = packet.Content.GetValue("id").ToString();
+            } catch(Exception ex)
+            {
+                log("exception occured during identification parsing: " + ex.Message);
+            }
+
+            log("identification has been received, calling 'ready' event.");
+
+            if (OnReady != null)
+            {
+                OnReady();
+            }
+        }
 
 		private void attachListeners() {
 
 			client.OnConnect += () => {
-				log("connected.");
+                log("connected.");
 				spawnIntervalThread();
 			};
 
@@ -155,16 +203,22 @@ namespace Balance
 
 			client.OnMessage += (String data) =>
 			{
-				log("receiving: " + data);
+                debug("receiving: " + data);
 				Packet packet = this.deserialiseIncomingPacket(data);
-				//log("receiving: " + packet.ToString());
+                debug("receiving: " + packet.ToString());
 
-				if (packet.Type == INTERNAL) {
+                if (packet.Type == INTERNAL) {
 					
 					if (packet.Header == PING_HEADER) {
 						receivePong();
 						return;
 					}
+
+                    if (packet.Header == IDENTIFICATION)
+                    {
+                        receiveIdentification(packet);
+                        return;
+                    }
 
 					if (OnInternalPacket != null) {
 						OnInternalPacket(packet);
@@ -184,7 +238,7 @@ namespace Balance
 				return JsonConvert.DeserializeObject<NetPacket>(data).ToPacket();
 			}
 			catch (Exception exception){
-				log("packet deserialisation failed: " + exception.Message + ", " + data);
+                log("packet deserialisation failed: " + exception.Message + ", " + data);
 				return new Packet();
 			}
 		}
@@ -229,7 +283,7 @@ namespace Balance
 
 			try
 			{
-				log("sending packet with header: " + packet.Header);
+                debug("sending packet with header: " + packet.Header);
 				this.client.Send(this.serialiseOutgoingPacket(packet));
 			}
 			catch (Exception exception){

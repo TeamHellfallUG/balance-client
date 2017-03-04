@@ -20,7 +20,9 @@ namespace Balance.Specialized
 		public event PacketArgsDelegate OnMatchDisband; //server only
 		public event PacketArgsDelegate OnMatchStart; //server only
 		public event PacketArgsDelegate OnMatchEnd; //server only
-		public event PacketArgsDelegate OnMatchExit;
+
+		public event VoidEventDelegate OnMatchExit;
+        public event StringArgsDelegate OnOtherMatchExit;
 
 		public event StatesArgsDelegate OnStatesUpdate;
 		public event PacketArgsDelegate OnMessageUpdate;
@@ -115,12 +117,36 @@ namespace Balance.Specialized
 		}
 
 		private void handleMatchExit(Packet packet){
-			this.inMatch = false;
+
+            try
+            {
+                String leaverId = packet.Content.GetValue("leaver").ToString();
+                if(leaverId != this.GetIdentification())
+                {
+                    log("other " + leaverId + " left the match.");
+                    if (OnOtherMatchExit != null)
+                    {
+                        OnOtherMatchExit(leaverId);
+                    }
+                    return;
+                }
+            } catch(Exception ex)
+            {
+                log("an exception occured during the parsing of a match exit packet: " + ex.Message);
+                return;
+            }
+
+            this.inMatch = false;
 			this.lastMatches.Add (this.currentMatchId);
 			this.currentMatchId = null;
 			this.confirmMatchId = null;
 			log ("client left match.");
-		}
+
+            if (OnMatchExit != null)
+            {
+                OnMatchExit();
+            }
+        }
 
 		private void handleStatesUpdate(Packet packet){
 
@@ -210,9 +236,6 @@ namespace Balance.Specialized
 
 					case RGSHeader.EXIT:
 						this.handleMatchExit(packet);
-						if(OnMatchExit != null){
-							OnMatchExit(packet);
-						}
 					break;
 
 					case RGSHeader.STATE_UPDATE:

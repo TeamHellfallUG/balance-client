@@ -6,11 +6,13 @@ namespace Balance.Utils
 	{
 		public String hostname;
 		public Int32 port;
+        public Boolean debugLog;
 
 		public Config()
 		{
 			this.hostname = "localhost";
 			this.port = 1337;
+            this.debugLog = false;
 		}
 
 		public String getHttpUrl() {
