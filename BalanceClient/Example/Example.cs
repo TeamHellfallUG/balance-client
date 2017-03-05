@@ -18,15 +18,16 @@ namespace Example
 
 	class Example
 	{
-		public const String VERSION = "0.0.2";
+		public const String VERSION = "1.0.3";
 
 		public static void Main(string[] args)
 		{
 			Console.WriteLine("[Example]: " + VERSION);
 
-			//HttpExample();
-			WSClientExample();
-			//UDPClientExample();
+            //HttpExample();
+            //WSClientExample();
+            //LidgrenClientExample();
+            UDPClientExample();
 
 			while (true)
 			{
@@ -70,6 +71,7 @@ namespace Example
 		{
 
 			Config config = new Config();
+            config.hostname = "192.168.192.52";
 			config.port = 8443;
 
 			WSClient ws = new WSClient();
@@ -129,8 +131,40 @@ namespace Example
 			})).Start();
 		}
 
-		public static void UDPClientExample() { 
-			//TODO
-		}
+		public static void LidgrenClientExample() {
+
+            LidgrenClient client = new LidgrenClient();
+            Config config = new Config();
+            config.hostname = "192.168.192.52";
+            config.port = 9443;
+
+            client.OnDebug += Console.WriteLine;
+            client.OnError += Console.WriteLine;
+            client.OnMessage += Console.WriteLine;
+
+            client.Connect(config);
+
+            client.Send("bla");
+            client.SendUnreliable("bla bla");
+        }
+
+        public static void UDPClientExample()
+        {
+            UDPClient client = new UDPClient();
+
+            Config config = new Config();
+            config.hostname = "192.168.192.52";
+            config.port = 9443;
+
+            client.OnError += Console.WriteLine;
+            client.OnMessage += Console.WriteLine;
+
+            client.Connect(config);
+
+            client.OnConnect += () =>
+            {
+                client.Send("derp");
+            };
+        }
 	}
 }

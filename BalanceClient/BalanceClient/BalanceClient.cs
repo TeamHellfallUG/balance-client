@@ -11,11 +11,11 @@ namespace Balance
 {
 	public class BalanceClient
 	{
-		public const String VERSION = "1.3.0";
+		public const String VERSION = "1.4.0";
 		public const String INTERNAL = "internal";
 		public const String PING_HEADER = "GS:PING";
         public const String IDENTIFICATION = "J:IDENTIFICATION";
-		public const Int32 PING_INTERVAL = 15500;
+		public static Int32 PING_INTERVAL = 3000;
 
         public delegate void VoidEventDelegate();
 		public delegate void LogDelegate(String message);
@@ -291,8 +291,8 @@ namespace Balance
 			}
 		}
 
-		public double getCurrentPing() {
-			return lastPingRoundtrip;
+		public long GetPing() {
+			return (long)lastPingRoundtrip;
 		}
 	}
 }
