@@ -8,12 +8,7 @@ namespace Balance.Utils
 		public Double y;
 		public Double z;
 
-		public Vector()
-		{
-			x = 0;
-			y = 0;
-			z = 0;
-		}
+		public Vector() {}
 
 		public Vector(Double x, Double y, Double z) 
 		{
@@ -21,5 +16,10 @@ namespace Balance.Utils
 			this.y = y;
 			this.z = z;
 		}
+
+        public static Vector Zero()
+        {
+            return new Vector(0,0,0);
+        }
 	}
 }

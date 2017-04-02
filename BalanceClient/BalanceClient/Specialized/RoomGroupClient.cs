@@ -20,29 +20,67 @@ namespace Balance.Specialized
 		public event PacketArgsDelegate OnMatchDisband; //server only
 		public event PacketArgsDelegate OnMatchStart; //server only
 		public event PacketArgsDelegate OnMatchEnd; //server only
+        public event VoidEventDelegate OnMatchValidated; //server only
 
-		public event VoidEventDelegate OnMatchExit;
+        public event VoidEventDelegate OnMatchExit;
         public event StringArgsDelegate OnOtherMatchExit;
 
 		public event StatesArgsDelegate OnStatesUpdate;
 		public event PacketArgsDelegate OnMessageUpdate;
 		public event PacketArgsDelegate OnWorldUpdate;
 
-		private bool inQueue = false;
-		private bool inMatch = false;
-        private bool confirmationOpen = false;
+        public event StringArgsDelegate OnUdpIdentification; //server only
+        public event VoidEventDelegate OnUdpClientConnected;
+        public event VoidEventDelegate OnUdpClientClose;
+
+		private Boolean inQueue = false;
+		private Boolean inMatch = false;
+        private Boolean confirmationOpen = false;
 		private String currentMatchId = null;
 		private String confirmMatchId = null;
 
 		private List<string> lastMatches;
-		
-		public RoomGroupClient(Config config, IClient client, LogDelegate logDelegate) : 
+
+        private Config udpConfig;
+        private UDPClient udpClient;
+        private String udpIdentifier;
+        private String udpGroupId;
+        private Boolean udpActive;
+
+        public RoomGroupClient(Config config, IClient client, LogDelegate logDelegate) : 
 		base(config, client, logDelegate)
 		{
 			log("RoomGroupClient active.");
 			this.lastMatches = new List<string> ();
             init();
 		}
+
+        public RoomGroupClient(Config mainConfig, IClient mainClient, 
+            Config udpConfig, LogDelegate logDelegate) :
+            base(mainConfig, mainClient, logDelegate)
+        {
+            log("RoomGroupClient (+sub-client) active.");
+            this.lastMatches = new List<string>();
+
+            //will be used to spawn udp clients on demand
+            this.udpConfig = udpConfig;
+
+            this.udpIdentifier = "";
+            this.udpGroupId = "";
+            this.udpActive = false;
+
+            init();
+        }
+
+        public bool IsUdpActive()
+        {
+            return this.udpActive;
+        }
+
+        public UDPClient GetUdpSubClient()
+        {
+            return this.udpClient;
+        }
 
 		public bool IsInQueue(){
 			return this.inQueue;
@@ -142,6 +180,8 @@ namespace Balance.Specialized
 			this.confirmMatchId = null;
 			log ("client left match.");
 
+            this.CloseUdpSubClient();
+
             if (OnMatchExit != null)
             {
                 OnMatchExit();
@@ -180,6 +220,164 @@ namespace Balance.Specialized
 			}
 		}
 
+        public void CloseUdpSubClient()
+        {
+            if (this.udpActive)
+            {
+                this.log("closing udp sub client.");
+
+                this.udpActive = false;
+                this.udpIdentifier = "";
+                this.udpGroupId = "";
+
+                if (OnUdpClientClose != null)
+                {
+                    OnUdpClientClose();
+                }
+
+                if (this.udpClient != null)
+                {
+                    this.udpClient.Close();
+                    this.udpClient = null;
+                }
+            }
+        }
+
+        private void spawnUdpSubClient()
+        {
+            if (this.udpActive)
+            {
+                this.log("cannot spawn udp sub client as one is already active.");
+                return;
+            }
+
+            if (OnUdpIdentification != null)
+            {
+                OnUdpIdentification(this.udpIdentifier);
+            }
+
+            this.udpActive = true;
+            this.udpClient = new UDPClient();
+
+            this.udpClient.OnConnect += () =>
+            {
+                this.log("udp sub client is connected.");
+
+                if (OnUdpClientConnected != null)
+                {
+                    OnUdpClientConnected();
+                }
+            };
+
+            this.udpClient.OnDebug += str =>
+            {
+                this.debug(str);
+            };
+
+            this.udpClient.OnClose += () =>
+            {
+                this.CloseUdpSubClient();
+            };
+
+            this.udpClient.OnError += error =>
+            {
+                this.log("udp client error occured: " + error.Message + ", " + error.StackTrace);
+            };
+
+            this.udpClient.OnPacket += packet =>
+            {
+                if(packet.Type == INTERNAL)
+                {
+                    switch (packet.Header)
+                    {
+                        case RGSHeader.STATE_UPDATE:
+                            this.handleStatesUpdate(packet);
+                            return;
+
+                        case RGSHeader.MESSAGE_UPDATE:
+                            this.handleMessageUpdate(packet);
+                            break;
+
+                        case RGSHeader.WORLD_UPDATE:
+                            if (OnWorldUpdate != null)
+                            {
+                                OnWorldUpdate(packet);
+                            }
+                            break;
+
+                        default:
+                            //empty
+                            break;
+                    }
+                }
+            };
+
+            this.log("spawning udp sub client..");
+            this.udpClient.Connect(this.udpConfig);
+        }
+
+        public int SendUdp(String header, JObject content, String type)
+        {
+            if(this.udpClient == null)
+            {
+                throw new Exception("There is no udp client currently spawned.");
+            }
+
+            //apply required default fields
+            content.Add("gid", this.udpGroupId);
+            content.Add("uid", this.udpIdentifier);
+            content.Add("tid", this.GetIdentification());
+
+            return this.udpClient.Send(new Packet(type, header, content));
+        }
+
+        private void handleMessageUpdate(Packet packet)
+        {
+            try
+            {
+                //try to look for identifier packet
+                String identifier = packet.Content.GetValue("identifier").ToString();
+                String groupId = packet.Content.GetValue("groupId").ToString();
+
+                if(identifier != null && groupId != null)
+                {
+                    this.log("received udp client identifier: " + identifier);
+                    this.udpIdentifier = identifier;
+                    this.udpGroupId = groupId;
+                    this.spawnUdpSubClient();
+
+                    return; //EOF
+                }
+
+                //try to look for info packet
+                String info = packet.Content.GetValue("info").ToString();
+
+                if(info != null)
+                {
+                    this.log("received info -> " + info);
+
+                    if(info == "VALIDATION-TOTAL")
+                    {
+                        if (OnMatchValidated != null)
+                        {
+                            OnMatchValidated();
+                        }
+                    }
+
+                    return; //EOF
+                }
+
+            } catch(Exception ex)
+            {
+                //empty
+            }
+
+            if (OnMessageUpdate != null)
+            {
+                OnMessageUpdate(packet);
+            }
+        }
+
         private void init() {
 
 			base.OnInternalPacket += packet => {
@@ -200,7 +398,7 @@ namespace Balance.Specialized
 					break;
 
 					case RGSHeader.LEAVE:
-						this.handleLeaveConfirmation(packet);
+                        this.handleLeaveConfirmation(packet);
 						if(OnLeftQueue != null){
 							OnLeftQueue(packet);
 						}
@@ -214,7 +412,8 @@ namespace Balance.Specialized
 					break;
 
 					case RGSHeader.DISBAND:
-						this.handleDisband(packet);
+                        this.CloseUdpSubClient();
+                        this.handleDisband(packet);
 						if(OnMatchDisband != null){
 							OnMatchDisband(packet);
 						}
@@ -228,6 +427,7 @@ namespace Balance.Specialized
 					break;
 
 					case RGSHeader.END:
+                        this.CloseUdpSubClient();
 						this.handleEnd(packet);
 						if(OnMatchEnd != null){
 							OnMatchEnd(packet);
@@ -235,7 +435,7 @@ namespace Balance.Specialized
 					break;
 
 					case RGSHeader.EXIT:
-						this.handleMatchExit(packet);
+                        this.handleMatchExit(packet);
 					break;
 
 					case RGSHeader.STATE_UPDATE:
@@ -243,9 +443,7 @@ namespace Balance.Specialized
 					return;
 
 					case RGSHeader.MESSAGE_UPDATE:
-						if(OnMessageUpdate != null){
-							OnMessageUpdate(packet);
-						}
+                        this.handleMessageUpdate(packet);
 					break;
 
 					case RGSHeader.WORLD_UPDATE:
@@ -321,6 +519,25 @@ namespace Balance.Specialized
 			content.Add ("state", JObject.FromObject(stateUpdate));
 			Send (new Packet(INTERNAL, RGSHeader.STATE_UPDATE, content));
 		}
+
+        public void SendUdpStateUpdate(StateUpdate stateUpdate)
+        {
+            if (!this.IsInMatch())
+            {
+                throw new Exception("cannot send state update, since client is not in a match.");
+            }
+
+            JObject content = new JObject();
+            content.Add("state", JObject.FromObject(stateUpdate));
+           
+            SendUdp(RGSHeader.STATE_UPDATE, content, INTERNAL);
+        }
+
+        public new void Close()
+        {
+            base.Close();
+            this.CloseUdpSubClient();
+        }
 
 	}
 }

@@ -27,9 +27,10 @@ namespace Example
             //HttpExample();
             //WSClientExample();
             //LidgrenClientExample();
-            UDPClientExample();
+            //UDPClientExample();
+            RoomGroupClientExample();
 
-			while (true)
+            while (true)
 			{
 				Thread.Sleep(100);
 				//empty
@@ -165,6 +166,23 @@ namespace Example
             {
                 client.Send("derp");
             };
+        }
+
+        public static void RoomGroupClientExample()
+        {
+            WSClient ws = new WSClient();
+
+            Config wsConfig = new Config();
+            wsConfig.hostname = "192.168.192.52";
+            wsConfig.port = 8443;
+
+            Config udpConfig = new Config();
+            udpConfig.hostname = "192.168.192.52";
+            udpConfig.port = 9443;
+
+            RoomGroupClient rgc = new RoomGroupClient(wsConfig, ws, udpConfig, Console.WriteLine);
+
+            rgc.Run();
         }
 	}
 }

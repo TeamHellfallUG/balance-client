@@ -16,6 +16,7 @@ namespace Balance.Client
         public const String INTERNAL = "internal";
         public const String PING_HEADER = "UDP:PING";
         public const String CONN_HEADER = "UDP:CONN";
+        public const String CONN_AFIRM_HEADER = "UDP:CONN:AFIRM";
         public static DateTime UnixEpoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
         public static int MAX_CONN_ATTEMPTS = 5;
         public static int ACK_THRESHOLD = 3500;
@@ -69,10 +70,6 @@ namespace Balance.Client
                 throw new Exception("readThread is already active.");
             }
 
-            string d = JsonConvert.SerializeObject(new Packet());
-            Console.WriteLine(d);
-
-
             this.config = config;
             IPAddress serverIp = IPAddress.Parse(config.hostname);
             this.serverAddress = new IPEndPoint(serverIp, config.port);
@@ -95,6 +92,11 @@ namespace Balance.Client
         public void Send(string data)
         {
             send(data);
+        }
+
+        public int Send(Packet packet)
+        {
+            return this.send(packet.ToNetPacket());
         }
 
         private int send(string data)
@@ -302,17 +304,20 @@ namespace Balance.Client
                 {
                     case PING_HEADER:
                         handleAckReply(packet);
-                        break;
+                        return;
 
                     case CONN_HEADER:
                         connected = true; //just set the boolean, interval will take care of the rest
-                        break;
+                        return;
+
+                    case CONN_AFIRM_HEADER:
+                        //empty
+                        return;
 
                     default:
-                        OnError(new Exception("received unknown internal message header: " + packet.Header));
+                        //empty
                         break;
                 }
-                return;
             }
 
             if (OnMessage != null)

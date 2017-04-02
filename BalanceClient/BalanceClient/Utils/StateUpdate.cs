@@ -9,12 +9,7 @@ namespace Balance.Utils
 		public Vector rotation;
 		public List<string> animations;
 
-		public StateUpdate ()
-		{
-			this.position = new Vector ();
-			this.rotation = new Vector ();
-			this.animations = new List<string> ();
-		}
+		public StateUpdate () {}
 
 		public StateUpdate(Vector position, Vector rotation){
 			this.position = position;

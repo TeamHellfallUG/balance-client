@@ -36,11 +36,7 @@ namespace Balance.Utils
 		private String header;
 		private JObject content;
 
-		public Packet() {
-			this.type = "";
-			this.header = "";
-			this.content = null;
-		}
+		public Packet() {}
 
 		public Packet(NetPacket netPacket) {
 			this.type = netPacket.type;

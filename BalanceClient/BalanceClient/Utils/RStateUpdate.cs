@@ -10,6 +10,8 @@ namespace Balance.Utils
 		private List<string> animations;
 		private String clientId;
 
+        public RStateUpdate() { }
+
 		public RStateUpdate(Vector position, Vector rotation, List<string> animations, String clientId){
 			this.position = position;
 			this.rotation = rotation;

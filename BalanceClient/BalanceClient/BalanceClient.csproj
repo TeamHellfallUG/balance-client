@@ -7,8 +7,8 @@
     <OutputType>Library</OutputType>
     <RootNamespace>BalanceClient</RootNamespace>
     <AssemblyName>BalanceClient</AssemblyName>
-    <TargetFrameworkVersion>v2.0</TargetFrameworkVersion>
-    <TargetFrameworkProfile />
+    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
+    <TargetFrameworkProfile>Client</TargetFrameworkProfile>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -28,18 +28,18 @@
     <ConsolePause>false</ConsolePause>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="System" />
+    <Reference Include="BetterHttpClient">
+      <HintPath>..\libs\2.0\BetterHttpClient.dll</HintPath>
+    </Reference>
     <Reference Include="Lidgren.Network">
       <HintPath>..\libs\2.0\Lidgren.Network.dll</HintPath>
-    </Reference>
-    <Reference Include="websocket-sharp">
-      <HintPath>..\libs\2.0\websocket-sharp.dll</HintPath>
     </Reference>
     <Reference Include="Newtonsoft.Json">
       <HintPath>..\libs\2.0\Newtonsoft.Json.dll</HintPath>
     </Reference>
-    <Reference Include="BetterHttpClient">
-      <HintPath>..\libs\2.0\BetterHttpClient.dll</HintPath>
+    <Reference Include="System" />
+    <Reference Include="websocket-sharp">
+      <HintPath>..\libs\2.0\websocket-sharp.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
@@ -63,6 +63,5 @@
     <Compile Include="Utils\StateUpdate.cs" />
     <Compile Include="Utils\RStateUpdate.cs" />
   </ItemGroup>
-  <ItemGroup />
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
 </Project>
