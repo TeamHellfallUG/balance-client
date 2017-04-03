@@ -58,10 +58,10 @@
     <Compile Include="Specialized\GroupClient.cs" />
     <Compile Include="Specialized\VectorGroupClient.cs" />
     <Compile Include="Specialized\RoomGroupClient.cs" />
+    <Compile Include="Utils\RStateUpdate.cs" />
     <Compile Include="Utils\Vector.cs" />
     <Compile Include="Specialized\RGSHeader.cs" />
     <Compile Include="Utils\StateUpdate.cs" />
-    <Compile Include="Utils\RStateUpdate.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
 </Project>

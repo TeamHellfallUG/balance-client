@@ -284,6 +284,11 @@ namespace Balance.Specialized
                 this.log("udp client error occured: " + error.Message + ", " + error.StackTrace);
             };
 
+            this.udpClient.OnMessage += msg =>
+            {
+                this.debug("udp msg: " + msg);
+            };
+
             this.udpClient.OnPacket += packet =>
             {
                 if(packet.Type == INTERNAL)
