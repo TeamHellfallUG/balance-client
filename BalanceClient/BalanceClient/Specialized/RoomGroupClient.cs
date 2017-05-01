@@ -36,6 +36,7 @@ namespace Balance.Specialized
 		private Boolean inQueue = false;
 		private Boolean inMatch = false;
         private Boolean confirmationOpen = false;
+        private Boolean clientConfirmed = false;
 		private String currentMatchId = null;
 		private String confirmMatchId = null;
 
@@ -95,6 +96,11 @@ namespace Balance.Specialized
             return this.confirmationOpen;
         }
 
+        public bool HasClientConfirmed()
+        {
+            return this.clientConfirmed;
+        }
+
 		public String GetCurrentMatchId(){
 			return this.currentMatchId;
 		}
@@ -128,11 +134,13 @@ namespace Balance.Specialized
             }
 
             this.confirmationOpen = true;
+            this.clientConfirmed = false; //reset
             log ("found match, received confirmation request.");
 		}
 
 		private void handleStart(Packet packet){
-			this.inMatch = true;
+            this.confirmationOpen = false;
+            this.inMatch = true;
             this.currentMatchId = this.confirmMatchId;
 			this.confirmMatchId = null;
 			log ("match is ready to start.");
@@ -141,6 +149,7 @@ namespace Balance.Specialized
 		private void handleDisband(Packet packet){
 			this.inMatch = false;
             this.confirmationOpen = false;
+            this.clientConfirmed = false;
             this.currentMatchId = null;
 			this.confirmMatchId = null;
 			log ("match group has been disbanded.");
@@ -496,7 +505,12 @@ namespace Balance.Specialized
 				throw new Exception ("cannot confirm match without a present confirmation request.");
 			}
 
-            this.confirmationOpen = false;
+            if (this.clientConfirmed)
+            {
+                throw new Exception("client has already confirmed the latest request.");
+            }
+
+            this.clientConfirmed = true;
 
             JObject content = new JObject ();
 			content.Add ("matchId", this.confirmMatchId);
