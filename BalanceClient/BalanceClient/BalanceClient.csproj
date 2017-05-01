@@ -50,6 +50,8 @@
     <Compile Include="Client\LidgrenClient.cs" />
     <Compile Include="Client\IClient.cs" />
     <Compile Include="Utils\Config.cs" />
+    <Compile Include="Utils\MessageUpdate.cs" />
+    <Compile Include="Utils\UpdateBase.cs" />
     <Compile Include="Utils\Packet.cs" />
     <Compile Include="Http\Request.cs" />
     <Compile Include="Http\Response.cs" />
@@ -62,6 +64,7 @@
     <Compile Include="Utils\Vector.cs" />
     <Compile Include="Specialized\RGSHeader.cs" />
     <Compile Include="Utils\StateUpdate.cs" />
+    <Compile Include="Utils\WorldUpdate.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
 </Project>

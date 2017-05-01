@@ -519,32 +519,25 @@ namespace Balance.Specialized
 
 		public void ExitMatch(){
 
-			if (!this.IsInMatch ()) {
-				throw new Exception ("cannot exit match, sine client is not a member of one.");
-			}
+            throwIfNotInMatch();
 
-			JObject content = new JObject ();
+            JObject content = new JObject ();
 			content.Add ("matchId", this.currentMatchId);
 			Send (new Packet(INTERNAL, RGSHeader.EXIT, content));
 		}
 
 		public void SendStateUpdate(StateUpdate stateUpdate){
 
-			if(!this.IsInMatch()){
-				throw new Exception ("cannot send state update, since client is not in a match.");
-			}
+            throwIfNotInMatch();
 
-			JObject content = new JObject ();
+            JObject content = new JObject ();
 			content.Add ("state", JObject.FromObject(stateUpdate));
 			Send (new Packet(INTERNAL, RGSHeader.STATE_UPDATE, content));
 		}
 
         public void SendUdpStateUpdate(StateUpdate stateUpdate)
         {
-            if (!this.IsInMatch())
-            {
-                throw new Exception("cannot send state update, since client is not in a match.");
-            }
+            throwIfNotInMatch();
 
             JObject content = new JObject();
             content.Add("state", JObject.FromObject(stateUpdate));
@@ -558,5 +551,36 @@ namespace Balance.Specialized
             this.CloseUdpSubClient();
         }
 
-	}
+        private void throwIfNotInMatch()
+        {
+            if (!this.IsInMatch())
+            {
+                throw new Exception("cannot send message update, since client is not in a match.");
+            }
+        }
+
+        public void SendMessageUpdate(MessageUpdate messageUpdate)
+        {
+            throwIfNotInMatch();
+            Send(new Packet(INTERNAL, RGSHeader.MESSAGE_UPDATE, messageUpdate.ToJObject()));
+        }
+
+        public void SendWorldUpdate(WorldUpdate worldUpdate)
+        {
+            throwIfNotInMatch();
+            Send(new Packet(INTERNAL, RGSHeader.WORLD_UPDATE, worldUpdate.ToJObject()));
+        }
+
+        public void SendUdpMessageUpdate(MessageUpdate messageUpdate)
+        {
+            throwIfNotInMatch();
+            SendUdp(RGSHeader.MESSAGE_UPDATE, messageUpdate.ToJObject(), INTERNAL);
+        }
+
+        public void SendUdpWorldUpdate(WorldUpdate worldUpdate)
+        {
+            throwIfNotInMatch();
+            SendUdp(RGSHeader.WORLD_UPDATE, worldUpdate.ToJObject(), INTERNAL);
+        }
+    }
 }
